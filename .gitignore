@@ -1,0 +1,17 @@
+# Python/runtime caches
+__pycache__/
+*.py[cod]
+.ipynb_checkpoints/
+
+# Matplotlib and local notebook scratch output
+.cache/
+
+# Project-generated data products. These are regenerated on Levante by the
+# scripts documented in README.md and are too large for normal GitHub storage.
+data/
+figures/
+
+# Local logs and scheduler output
+*.log
+slurm-*.out
+
