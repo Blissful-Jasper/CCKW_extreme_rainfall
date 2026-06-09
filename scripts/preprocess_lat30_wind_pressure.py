@@ -4,7 +4,7 @@
 This wraps the existing optimized 3-D preprocessing used by
 00_preprocess_lat30_region_for_clw_cli.ipynb, but keeps every output under the
 extreme-rainfall project directory. The merged files are written in the layout
-expected by /work/mh1498/m301257/code/interpolate_to_pressure_levels.py:
+expected by the project-local interpolate_to_pressure_levels.py script:
 
     data/model_levels_lat30/cntl/ua_all_levels.nc
     data/model_levels_lat30/cntl/va_all_levels.nc

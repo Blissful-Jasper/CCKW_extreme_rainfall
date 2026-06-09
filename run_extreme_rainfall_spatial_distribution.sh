@@ -8,7 +8,7 @@ export NUMEXPR_NUM_THREADS="${NUMEXPR_NUM_THREADS:-1}"
 export MPLCONFIGDIR="${MPLCONFIGDIR:-/tmp/m301257_matplotlib}"
 
 PYTHON="${PYTHON:-/home/m/m301257/.conda/envs/xianpu/bin/python}"
-SCRIPT="/work/mh1498/m301257/code_extreme_event/plot_extreme_rainfall_spatial_distribution.py"
+SCRIPT="/work/mh1498/m301257/code_extreme_event/scripts/plot_extreme_rainfall_spatial_distribution.py"
 
 "${PYTHON}" "${SCRIPT}" \
   --scheduler threads \

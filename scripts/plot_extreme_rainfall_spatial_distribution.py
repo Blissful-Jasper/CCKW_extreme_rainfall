@@ -61,10 +61,10 @@ DEFAULT_PR_PATH = (
     BASE_DIR / "processed_data_lat_30/2d_layers/pr_cntl/pr_2deg_interp.nc"
 )
 DEFAULT_U850_PATH = (
-    CODE_DIR / "data/pressure_levels_lat30/ua_pressure_levels_cntl.nc"
+    CODE_DIR / "data/wind_850hpa_lat30/ua_850hpa_cntl_lat30.nc"
 )
 DEFAULT_V850_PATH = (
-    CODE_DIR / "data/pressure_levels_lat30/va_pressure_levels_cntl.nc"
+    CODE_DIR / "data/wind_850hpa_lat30/va_850hpa_cntl_lat30.nc"
 )
 
 SEASONS = ("DJF", "MAM", "JJA", "SON")
@@ -144,18 +144,29 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--scheduler", choices=("distributed", "threads"), default="distributed")
     parser.add_argument("--wind-step", type=int, default=2)
     parser.add_argument("--dpi", type=int, default=300)
-    parser.add_argument("--output-dir", type=Path, default=CODE_DIR / "figures")
+    parser.add_argument(
+        "--output-dir",
+        type=Path,
+        default=CODE_DIR / "figures/plot_extreme_rainfall_spatial_distribution",
+        help="Directory for image outputs only.",
+    )
+    parser.add_argument(
+        "--fields-dir",
+        type=Path,
+        default=CODE_DIR / "data/seasonal_fields",
+        help="Directory for generated NetCDF diagnostic fields.",
+    )
     parser.add_argument(
         "--output-name",
         default="figure1_style_seasonal_rainfall_wind_icon_cntl.png",
     )
     parser.add_argument(
         "--fields-name",
-        default="figure1_style_seasonal_rainfall_wind_icon_cntl_fields.nc",
+        default="seasonal_rainfall_wind_cntl_full_domain_fields.nc",
     )
     parser.add_argument(
         "--p99-fields-name",
-        default="figure1_style_seasonal_rainfall_p99_icon_cntl_fields.nc",
+        default="seasonal_rainfall_p99_cntl_full_domain_fields.nc",
     )
     parser.add_argument("--no-save-fields", action="store_true")
     parser.add_argument("--no-region-boxes", action="store_true")
@@ -248,7 +259,9 @@ def choose_pr_scale(da: xr.DataArray, pr_scale: str) -> float:
 
 
 def select_pressure_level(da: xr.DataArray, target_plev: float) -> xr.DataArray:
-    if "plev" not in da.coords and "plev" not in da.dims:
+    if "plev" not in da.dims:
+        return da.drop_vars("plev", errors="ignore")
+    if "plev" not in da.coords:
         return da
 
     plev = da["plev"]
@@ -262,6 +275,17 @@ def select_pressure_level(da: xr.DataArray, target_plev: float) -> xr.DataArray:
         target = target / 100.0
 
     return da.sel(plev=target, method="nearest").drop_vars("plev", errors="ignore")
+
+
+def grid_summary(da: xr.DataArray) -> str:
+    lat_name = _coord_name(da, ("lat", "latitude", "y"))
+    lon_name = _coord_name(da, ("lon", "longitude", "x"))
+    lat = da[lat_name]
+    lon = da[lon_name]
+    return (
+        f"lat {float(lat.min()):g}..{float(lat.max()):g} (n={lat.size}), "
+        f"lon {float(lon.min()):g}..{float(lon.max()):g} (n={lon.size})"
+    )
 
 
 def make_cluster(
@@ -408,6 +432,9 @@ def open_inputs(args: argparse.Namespace) -> tuple[xr.DataArray, xr.DataArray, x
     print(f"Precipitation: {pr_path}", flush=True)
     print(f"U850: {u_path}", flush=True)
     print(f"V850: {v_path}", flush=True)
+    print(f"Precipitation grid: {grid_summary(pr)}", flush=True)
+    print(f"U850 grid: {grid_summary(u)}", flush=True)
+    print(f"V850 grid: {grid_summary(v)}", flush=True)
     print(f"Precipitation scale factor: {scale:g}", flush=True)
     print(
         "Computation/output domain:",
@@ -734,12 +761,12 @@ def run_from_config(args: argparse.Namespace) -> tuple[Path, Path | None]:
 
         fields_path = None
         if not args.no_save_fields:
-            fields_path = args.output_dir / args.fields_name
-            args.output_dir.mkdir(parents=True, exist_ok=True)
+            fields_path = args.fields_dir / args.fields_name
+            args.fields_dir.mkdir(parents=True, exist_ok=True)
             fields_ds = build_fields_dataset(fields, scale, args.plev)
             fields_ds.to_netcdf(fields_path)
             print(f"Saved computed fields: {fields_path}", flush=True)
-            p99_fields_path = args.output_dir / args.p99_fields_name
+            p99_fields_path = args.fields_dir / args.p99_fields_name
             fields_ds[["rain_p99"]].to_netcdf(p99_fields_path)
             print(f"Saved 99th percentile fields: {p99_fields_path}", flush=True)
 
